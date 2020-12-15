@@ -1,0 +1,38 @@
+---
+- name: Launch aws instance
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+  - keys.yml
+  tasks:
+  - ec2_instance:
+      vpc_subnet_id: subnet-2d4d4845 
+      image_id: ami-08f63db601b82ff5f 
+      aws_secret_key: "{{ secret_key }}"
+      aws_access_key: "{{ access_key }}"
+      name: webos
+      instance_type: t2.micro 
+      state: present
+      tags: {"Purpose": "webserver"}
+      key_name: ansible
+      security_group: sg-03ef9242dfd8baf26
+      region: ap-south-1
+    register: x
+  - template:
+      src: hosts.j2
+      dest: /etc/ansible/hosts
+  - meta: refresh_inventory
+- name: prepare webserver
+  hosts: webserver
+  become: yes
+  tasks:
+    - yum:
+        name: httpd
+        state: present
+    - service:
+        name: httpd
+        enabled: true 
+        state: started 
+    - copy:
+        dest: /var/www/html/index.html
+        src: index.html
